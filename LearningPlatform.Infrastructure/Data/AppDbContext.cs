@@ -1,4 +1,5 @@
 ﻿
+using LearningPlatform.Application.Common.Interfaces;
 using LearningPlatform.Domain.Entities.Academic;
 using LearningPlatform.Domain.Entities.Attendance;
 using LearningPlatform.Domain.Entities.Audit;
@@ -10,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LearningPlatform.Infrastructure.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : DbContext , IApplicationDbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
