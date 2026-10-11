@@ -1,4 +1,4 @@
-﻿using LearningPlatform.Domain.Entities.Academic;
+using LearningPlatform.Domain.Entities.Academic;
 using LearningPlatform.Domain.Entities.Content;
 using LearningPlatform.Domain.Entities.Engagement;
 using LearningPlatform.Domain.Enums;
@@ -14,6 +14,7 @@ namespace LearningPlatform.Domain.Entities.Identity
         public string PhoneNumber { get; set; } = string.Empty;
         public string AvatarUrl { get; set; } = string.Empty;
         public AppLanguage PreferredLanguage { get; set; } = AppLanguage.English;
+        public UserType UserType { get; set; } = UserType.Student;
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
