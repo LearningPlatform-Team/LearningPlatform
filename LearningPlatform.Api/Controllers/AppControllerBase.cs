@@ -1,5 +1,4 @@
 ﻿using LearningPlatform.Domain.Shared;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LearningPlatform.Api.Controllers

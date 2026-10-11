@@ -6,8 +6,8 @@ namespace LearningPlatform.Domain.Entities.Attendance
     public class AttendanceRecord
     {
         public Guid Id { get; set; }
-        public int ClassSessionId { get; set; }
-        public int EnrollmentId { get; set; }
+        public Guid ClassSessionId { get; set; }
+        public Guid EnrollmentId { get; set; }
         public AttendanceStatus Status { get; set; }
         public DateTime? MarkedAt { get; set; }
         public Guid MarkedByUserId { get; set; }
