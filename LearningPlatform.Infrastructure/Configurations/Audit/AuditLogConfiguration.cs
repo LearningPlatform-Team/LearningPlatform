@@ -22,10 +22,10 @@ public class AuditLogConfiguration : IEntityTypeConfiguration<AuditLog>
             .HasMaxLength(50);
 
         builder.Property(al => al.OldValues)
-            .HasColumnType("NVARCHAR(MAX)");
+            .HasColumnType("text");
 
         builder.Property(al => al.NewValues)
-            .HasColumnType("NVARCHAR(MAX)");
+            .HasColumnType("text");
 
         builder.Property(al => al.ChangedAt)
             .IsRequired();

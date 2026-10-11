@@ -6,7 +6,7 @@ namespace LearningPlatform.Domain.Entities.Content
     public class Note
     {
         public Guid Id { get; set; }
-        public int UserId { get; set; }
+        public Guid UserId { get; set; }
         public string Title { get; set; } = string.Empty;
         public string? Content { get; set; }
         public NoteColor Color { get; set; } = NoteColor.Default;

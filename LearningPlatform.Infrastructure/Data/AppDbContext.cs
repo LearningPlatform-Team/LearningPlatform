@@ -7,20 +7,19 @@ using LearningPlatform.Domain.Entities.Content;
 using LearningPlatform.Domain.Entities.Engagement;
 using LearningPlatform.Domain.Entities.Grading;
 using LearningPlatform.Domain.Entities.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace LearningPlatform.Infrastructure.Data
 {
-    public class AppDbContext : DbContext , IApplicationDbContext
+    public class AppDbContext : IdentityDbContext<User, Role, Guid>, IApplicationDbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }
-        // Identity
-        public DbSet<User> Users => Set<User>();
-        public DbSet<Role> Roles => Set<Role>();
-        public DbSet<UserRole> UserRoles => Set<UserRole>();
+        // Identity - Users, Roles, and Claims are inherited from IdentityDbContext
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        public DbSet<Otp> Otps => Set<Otp>();
 
         // Academic structure & people
         public DbSet<AcademicTerm> AcademicTerms => Set<AcademicTerm>();
