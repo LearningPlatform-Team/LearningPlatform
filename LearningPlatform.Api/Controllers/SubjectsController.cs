@@ -1,8 +1,10 @@
 ﻿using LearningPlatform.Application.Features.Subjects.Commands.CreateSubject;
 using LearningPlatform.Application.Features.Subjects.Commands.DeleteSubject;
 using LearningPlatform.Application.Features.Subjects.Commands.UpdateSubject;
+using LearningPlatform.Application.Features.Subjects.Queries.GetMySubjects;
 using LearningPlatform.Application.Features.Subjects.Queries.GetSubjectById;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LearningPlatform.Api.Controllers;
@@ -26,13 +28,23 @@ public class SubjectsController : AppControllerBase
             cancellationToken);
         return HandleResult(result);
     }
+    [HttpGet("my")]
+    [Authorize(Roles = "Student")]
+    public async Task<IActionResult> GetMySubjects(
+    CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(
+            new GetMySubjectsQuery(),
+            cancellationToken);
+
+        return HandleResult(result);
+    }
     [HttpPost]
     public async Task<IActionResult> Create(
         [FromBody] CreateSubjectCommand command,
         CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(command, cancellationToken);
-
         return HandleResult(result);
     }
 
@@ -42,16 +54,7 @@ public class SubjectsController : AppControllerBase
         [FromBody] UpdateSubjectCommand command,
         CancellationToken cancellationToken)
     {
-        if (id != command.Id)
-        {
-            return BadRequest(new
-            {
-                Message = "The route ID does not match the subject ID in the request body."
-            });
-        }
-
         var result = await _mediator.Send(command, cancellationToken);
-
         return HandleResult(result);
     }
 

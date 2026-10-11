@@ -4,6 +4,7 @@ using LearningPlatform.Domain.Entities.Identity;
 using LearningPlatform.Infrastructure.Data;
 using LearningPlatform.Infrastructure.Messaging.Email;
 using LearningPlatform.Infrastructure.Security;
+using LearningPlatform.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -19,12 +20,12 @@ namespace LearningPlatform.Infrastructure
             services.AddDbContext<AppDbContext>(options =>
                         options.UseNpgsql(
                             connectionString,
-                            b => 
+                            b =>
                             {
                                 b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
                                 b.CommandTimeout(300);
                             }));
-            
+
             services.AddScoped<IApplicationDbContext>(provider =>
                     provider.GetRequiredService<AppDbContext>());
 
@@ -48,12 +49,12 @@ namespace LearningPlatform.Infrastructure
             .AddDefaultTokenProviders();
 
             services.AddHttpClient();
-
+            services.AddHttpContextAccessor();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IOtpService, OtpService>();
             services.AddScoped<IExternalAuthService, ExternalAuthService>();
-
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
             return services;
         }
     }
