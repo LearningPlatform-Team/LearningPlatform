@@ -16,4 +16,11 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\Attendance\GetSessionAttendance\" />
+    <Folder Include="Features\Attendance\GetStudentAttendance\" />
+    <Folder Include="Features\Attendance\GetAttendanceSummary\" />
+    <Folder Include="Features\Attendance\UpdateAttendance\" />
+  </ItemGroup>
+
 </Project>

@@ -1,8 +1,8 @@
+using LearningPlatform.Api.Extensions;
 using LearningPlatform.Api.Middlewares;
 using LearningPlatform.Application;
 using LearningPlatform.Infrastructure;
 using LearningPlatform.Infrastructure.Data;
-using LearningPlatform.Api.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -13,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHangfireServices(builder.Configuration);
 builder.Services.AddCustomSwagger();
 
 // CORS — allow the deployed frontend and local dev
@@ -91,6 +92,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseExceptionHandler();
+app.UseHangfireJobs();
 
 app.MapControllers();
 
