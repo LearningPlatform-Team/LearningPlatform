@@ -11,11 +11,11 @@ namespace LearningPlatform.Application.Common.Interfaces
 {
     public interface IApplicationDbContext
     {
-        // Identity
+        // Identity - Users, Roles, and UserRoles are available through IdentityDbContext
         DbSet<User> Users { get; }
         DbSet<Role> Roles { get; }
-        DbSet<UserRole> UserRoles { get; }
         DbSet<RefreshToken> RefreshTokens { get; }
+        DbSet<Otp> Otps { get; }
 
         // Academic structure & people
         DbSet<AcademicTerm> AcademicTerms { get; }
