@@ -1,6 +1,7 @@
 ﻿using LearningPlatform.Application.Features.Subjects.Commands.CreateSubject;
 using LearningPlatform.Application.Features.Subjects.Commands.DeleteSubject;
 using LearningPlatform.Application.Features.Subjects.Commands.UpdateSubject;
+using LearningPlatform.Application.Features.Subjects.Queries.GetSubjectById;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,6 +17,15 @@ public class SubjectsController : AppControllerBase
         _mediator = mediator;
     }
 
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id,
+    CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(
+            new GetSubjectByIdQuery(id),
+            cancellationToken);
+        return HandleResult(result);
+    }
     [HttpPost]
     public async Task<IActionResult> Create(
         [FromBody] CreateSubjectCommand command,
