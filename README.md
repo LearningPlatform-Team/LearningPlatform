@@ -310,6 +310,26 @@ erDiagram
   3. Dynamic moving watermark containing student credentials over the video player.
 * **Outcome**: Lightweight, cost-effective deterrent against illicit screen captures.
 
+### 📄 ADR-004: Live Video Meetings Infrastructure — Google Meet via Calendar API
+* **Date**: October 2026
+* **Context**: Edu Nova requires live interactive video lectures for university courses ranging from 30 to 100+ students, supporting screen sharing, chat, microphone controls, and automated attendance tracking. We evaluated whether to host our own WebRTC media servers, use public open-source instances (Jitsi), or integrate a cloud provider API.
+* **Options Considered**:
+  1. *Public Jitsi Meet (`meet.jit.si`)*: ❌ *Rejected*.
+     * **Host Authentication Block**: Since August 2023, 8x8 ended anonymous room creation; hosts must authenticate via Google/GitHub in a third-party popup before a room unlocks.
+     * **No Backend Control**: The free public `meet.jit.si` exposes no backend REST API to programmatically set room passwords from C#.
+     * **Bandwidth & Capacity Throttling**: Public community bridge servers actively throttle bitrates, drop frame rates, or disconnect users once a room exceeds 30–50 participants.
+     * **Privacy Vulnerability**: Any unauthenticated stranger who guesses the room URL can enter unless a doctor manually sets a password inside the Jitsi UI.
+  2. *Self-Hosted WebRTC / Jitsi on Dedicated Servers (Docker / Kurento / LiveKit)*: ❌ *Rejected*.
+     * Requires provisioning high-spec dedicated media servers (heavy CPU for video transcoding and multi-gigabit outbound bandwidth).
+     * High operational maintenance and server infrastructure costs for an MVP platform.
+  3. *Google Meet via Google Calendar API & OAuth 2.0 (Chosen)*: ✅ *Adopted*.
+     * **Enterprise Capacity & Reliability**: Handles 100 to 250+ students with HD video, noise cancellation, and screen sharing across Google's global edge network at zero video server cost to Edu Nova.
+     * **Programmatic Room Generation**: Backend calls Google Calendar API (`conferenceDataVersion=1`) to automatically generate authentic `meet.google.com/xxx-yyyy-zzz` links.
+     * **Security & Waiting Room**: Built-in "Knock to Enter" / domain restrictions prevent uninvited intruders.
+     * **Zero Video Infrastructure Burden**: Edu Nova manages what matters (enrollment verification, automated attendance logging upon clicking "Join", and in-app SignalR member rosters), while Google handles heavy media streaming.
+* **Decision**: Adopted **Google Meet via `IMeetingProvider`** abstraction (supporting manual/mock links for local development and Google Calendar API for production).
+* **Outcome**: High-performance, zero-cost video streaming infrastructure supporting 100+ students per lecture with seamless attendance tracking.
+
 ---
 
 ## 🤝 Team Git Workflow
