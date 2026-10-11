@@ -7,11 +7,15 @@ public class CreateAcademicTermCommandValidator
 {
     public CreateAcademicTermCommandValidator()
     {
-        RuleFor(x => x.Name)
+        RuleFor(x => x.AcademicYear)
             .NotEmpty()
-            .WithMessage("Academic term name is required.")
-            .MaximumLength(100)
-            .WithMessage("Academic term name cannot exceed 100 characters.");
+            .WithMessage("Academic year is required.")
+            .MaximumLength(20)
+            .WithMessage("Academic year cannot exceed 20 characters.");
+
+        RuleFor(x => x.TermNumber)
+            .InclusiveBetween(1, 2)
+            .WithMessage("Term number must be either 1 or 2.");
 
         RuleFor(x => x.StartDate)
             .NotEmpty()
@@ -19,7 +23,6 @@ public class CreateAcademicTermCommandValidator
 
         RuleFor(x => x.EndDate)
             .NotEmpty()
-            .WithMessage("End date is required.")
             .GreaterThan(x => x.StartDate)
             .WithMessage("End date must be after the start date.");
     }
