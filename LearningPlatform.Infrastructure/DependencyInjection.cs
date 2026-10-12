@@ -4,6 +4,7 @@ using LearningPlatform.Domain.Entities.Identity;
 using LearningPlatform.Infrastructure.Data;
 using LearningPlatform.Infrastructure.Messaging.Email;
 using LearningPlatform.Infrastructure.Security;
+using LearningPlatform.Infrastructure.Service;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -53,6 +54,7 @@ namespace LearningPlatform.Infrastructure
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IOtpService, OtpService>();
             services.AddScoped<IExternalAuthService, ExternalAuthService>();
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
 
             return services;
         }
