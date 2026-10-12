@@ -1,4 +1,5 @@
 ﻿using LearningPlatform.Application.Features.AcademicTerms.Commands.CreateAcademicTerm;
+using LearningPlatform.Application.Features.AcademicTerms.Commands.DeleteAcademicTerm;
 using LearningPlatform.Application.Features.AcademicTerms.Commands.UpdateAcademicTerm;
 using LearningPlatform.Application.Features.AcademicTerms.Queries.GetAcademicTermById;
 using LearningPlatform.Application.Features.AcademicTerms.Queries.GetAllAcademicTerms;
@@ -47,6 +48,12 @@ public class AcademicTermsController(IMediator mediator) : AppControllerBase
     CancellationToken cancellationToken)
     {
         var result = await mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new DeleteAcademicTermCommand(id), cancellationToken);
         return HandleResult(result);
     }
 }
