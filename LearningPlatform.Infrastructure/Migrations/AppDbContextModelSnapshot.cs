@@ -509,7 +509,13 @@ namespace LearningPlatform.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<DateTime>("StartsAt")
+                    b.Property<DateTime?>("EndsAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Location")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("StartsAtUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("SubjectOfferingId")
@@ -527,11 +533,11 @@ namespace LearningPlatform.Infrastructure.Migrations
 
                     b.HasIndex("CreatedByUserId");
 
-                    b.HasIndex("StartsAt");
-
-                    b.HasIndex("SubjectOfferingId");
+                    b.HasIndex("StartsAtUtc");
 
                     b.HasIndex("Type");
+
+                    b.HasIndex("SubjectOfferingId", "StartsAtUtc");
 
                     b.ToTable("Events");
                 });
@@ -549,6 +555,9 @@ namespace LearningPlatform.Infrastructure.Migrations
 
                     b.Property<int>("MinutesBefore")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("SentAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("EventId", "UserId");
 

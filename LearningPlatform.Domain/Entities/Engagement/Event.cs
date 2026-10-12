@@ -11,7 +11,10 @@ namespace LearningPlatform.Domain.Entities.Engagement
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
         public EventType Type { get; set; } = EventType.Other;
-        public DateTime StartsAt { get; set; }
+        public DateTime StartsAtUtc { get; set; }
+        public DateTime? EndsAtUtc { get; set; }
+
+        public string? Location { get; set; }
 
         public Guid? SubjectOfferingId { get; set; }
         public Guid CreatedByUserId { get; set; }
