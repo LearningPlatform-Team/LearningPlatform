@@ -23,7 +23,7 @@ namespace LearningPlatform.Api.Controllers
         }
 
         [HttpPut("update/{attendanceRecordId:guid}")]
-        [Authorize(Roles = "Instructor,Admin")]
+        [Authorize(Roles = "Doctor,TA,Admin")]
         public async Task<IActionResult> UpdateAttendance( Guid attendanceRecordId,
             [FromBody] UpdateAttendanceRequestDto request,CancellationToken cancellationToken)
         {
@@ -36,7 +36,7 @@ namespace LearningPlatform.Api.Controllers
         }
 
         [HttpGet("sessions/{classSessionId:guid}")]
-        [Authorize(Roles = "Instructor,Admin")]
+        [Authorize(Roles = "Doctor,TA,Admin")]
         public async Task<IActionResult> GetSessionAttendance(Guid classSessionId,[FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20,CancellationToken cancellationToken = default)
         {
@@ -48,7 +48,7 @@ namespace LearningPlatform.Api.Controllers
         }
 
         [HttpGet("students/{studentId:guid}")]
-        [Authorize(Roles = "Instructor,Admin")]
+        [Authorize(Roles = "Doctor,TA,Admin")]
         public async Task<IActionResult> GetStudentAttendance(Guid studentId, [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 20,
             CancellationToken cancellationToken = default)
@@ -70,7 +70,7 @@ namespace LearningPlatform.Api.Controllers
         }
 
         [HttpGet("enrollments/{enrollmentId:guid}/summary")]
-        [Authorize(Roles = "Instructor,Admin")]
+        [Authorize(Roles = "Doctor,TA,Admin")]
         public async Task<IActionResult> GetAttendanceSummary(Guid enrollmentId, CancellationToken cancellationToken)
         {
             var query = new GetAttendanceSummaryQuery(enrollmentId);

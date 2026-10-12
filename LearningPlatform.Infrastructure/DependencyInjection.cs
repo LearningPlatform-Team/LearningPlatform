@@ -1,6 +1,8 @@
 
 using LearningPlatform.Application.Common.Interfaces;
+using LearningPlatform.Application.Common.Interfaces.BackgroundJobs;
 using LearningPlatform.Domain.Entities.Identity;
+using LearningPlatform.Infrastructure.BackgroundJobs.Attendance;
 using LearningPlatform.Infrastructure.Data;
 using LearningPlatform.Infrastructure.Messaging.Email;
 using LearningPlatform.Infrastructure.Security;
@@ -53,6 +55,7 @@ namespace LearningPlatform.Infrastructure
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IOtpService, OtpService>();
             services.AddScoped<IExternalAuthService, ExternalAuthService>();
+
 
             return services;
         }
