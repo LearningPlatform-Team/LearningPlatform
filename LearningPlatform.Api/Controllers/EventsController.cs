@@ -1,4 +1,7 @@
 ﻿using LearningPlatform.Api.Extensions;
+using LearningPlatform.Application.Features.EventReminders.CreateEventReminder;
+using LearningPlatform.Application.Features.EventReminders.DeleteEventReminder;
+using LearningPlatform.Application.Features.EventReminders.GetEventReminders;
 using LearningPlatform.Application.Features.Events.CreateEvent;
 using LearningPlatform.Application.Features.Events.DeleteEvent;
 using LearningPlatform.Application.Features.Events.GetEventById;
@@ -132,6 +135,43 @@ public class EventsController : AppControllerBase
             User.IsDoctor(),
             User.IsTA(),
             take);
+        var result = await _sender.Send(query,cancellationToken);
+        return HandleResult(result);
+    }
+    [HttpPut("{eventId:guid}/reminder")]
+    public async Task<IActionResult> SetEventReminder(Guid eventId,[FromBody] SetEventReminderRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var currentUserId = User.GetUserId();
+        var command = new SetEventReminderCommand(
+            eventId,
+            currentUserId,
+            request.MinutesBefore,
+            User.IsAdmin(),
+            User.IsDoctor(),
+            User.IsTA());
+        var result = await _sender.Send(command,cancellationToken);
+        return HandleResult(result);
+    }
+    [HttpDelete("{eventId:guid}/reminder")]
+    public async Task<IActionResult> DeleteEventReminder(Guid eventId,CancellationToken cancellationToken)
+    {
+        var currentUserId = User.GetUserId();
+        var command = new DeleteEventReminderCommand(eventId,currentUserId);
+        var result = await _sender.Send(command,cancellationToken);
+        return HandleResult(result);
+    }
+
+    [HttpGet("reminders")]
+    public async Task<IActionResult> GetEventReminders([FromQuery] bool upcomingOnly = true,[FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,CancellationToken cancellationToken = default)
+    {
+        var currentUserId = User.GetUserId();
+        var query = new GetEventRemindersQuery(
+            currentUserId,
+            upcomingOnly,
+            pageNumber,
+            pageSize);
         var result = await _sender.Send(query,cancellationToken);
         return HandleResult(result);
     }
