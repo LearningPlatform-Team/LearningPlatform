@@ -20,10 +20,16 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
         builder.Property(e => e.Type)
             .IsRequired();
 
-        builder.Property(e => e.StartsAt)
+        builder.Property(e => e.StartsAtUtc)
             .IsRequired();
 
-        builder.HasIndex(e => e.StartsAt);
+        builder.HasIndex(e => e.StartsAtUtc);
+       
+        builder.HasIndex(eventItem => new
+        {
+            eventItem.SubjectOfferingId,
+            eventItem.StartsAtUtc
+        });
 
         builder.HasIndex(e => e.Type);
 

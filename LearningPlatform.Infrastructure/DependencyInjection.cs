@@ -1,6 +1,8 @@
 
 using LearningPlatform.Application.Common.Interfaces;
+using LearningPlatform.Application.Common.Interfaces.BackgroundJobs;
 using LearningPlatform.Domain.Entities.Identity;
+using LearningPlatform.Infrastructure.BackgroundJobs.Attendance;
 using LearningPlatform.Infrastructure.Data;
 using LearningPlatform.Infrastructure.Messaging.Email;
 using LearningPlatform.Infrastructure.Security;
@@ -54,12 +56,15 @@ namespace LearningPlatform.Infrastructure
             services.AddScoped<IOtpService, OtpService>();
             services.AddScoped<IExternalAuthService, ExternalAuthService>();
 
+<<<<<<< HEAD
             // Realtime Meeting Services & Infrastructure
             services.AddHttpContextAccessor();
             services.AddScoped<ICurrentUserService, LearningPlatform.Infrastructure.Services.CurrentUserService>();
             services.AddScoped<IMeetingProvider, LearningPlatform.Infrastructure.Services.GoogleMeetMeetingProvider>();
             services.AddSingleton<IMeetingPresenceTracker, LearningPlatform.Infrastructure.Realtime.Presence.MeetingPresenceTracker>();
             services.AddSignalR();
+=======
+>>>>>>> origin/main
 
             return services;
         }

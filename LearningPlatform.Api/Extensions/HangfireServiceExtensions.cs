@@ -2,35 +2,43 @@
 using Hangfire.PostgreSql;
 using LearningPlatform.Application.Common.Interfaces.BackgroundJobs;
 using LearningPlatform.Infrastructure.BackgroundJobs.Attendance;
+using LearningPlatform.Infrastructure.BackgroundJobs.Events;
 
 namespace LearningPlatform.Api.Extensions;
 
 public static class HangfireServiceExtensions
 {
-    public static IServiceCollection AddHangfireServices(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    public static IServiceCollection AddHangfireServices(this IServiceCollection services,IConfiguration configuration)
     {
         var connectionString =
             configuration.GetConnectionString("HangfireConnection")
-            ?? throw new InvalidOperationException(
-                "The 'HangfireConnection' connection string was not found.");
+            ?? throw new InvalidOperationException("The 'HangfireConnection' connection string was not found.");
 
         services.AddScoped<
             IAttendanceFinalizationJob,
             AttendanceFinalizationJob>();
 
+        services.AddScoped<
+            IEventReminderJob,
+            EventReminderJob>();
+
+
+
         services.AddHangfire(hangfireConfiguration =>
         {
             hangfireConfiguration
-                .SetDataCompatibilityLevel(
-                    CompatibilityLevel.Version_180)
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseRecommendedSerializerSettings()
-                .UsePostgreSqlStorage(
-                    options =>
+                .UseFilter(new AutomaticRetryAttribute
+                {
+                    Attempts = 3
+                })
+                .UseFilter(new DisableConcurrentExecutionAttribute(timeoutInSeconds: 300))
+                .UsePostgreSqlStorage(options =>
                     {
-                        options.UseNpgsqlConnection(connectionString);
+                        options.UseNpgsqlConnection(
+                            connectionString);
                     },
                     new PostgreSqlStorageOptions
                     {
