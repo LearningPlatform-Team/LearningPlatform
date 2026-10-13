@@ -66,7 +66,7 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
-
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddAuthorization();
 
 builder.Services.AddExceptionHandler<CustomExceptionHandler>();
