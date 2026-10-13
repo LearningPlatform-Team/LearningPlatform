@@ -1,12 +1,13 @@
 using System.Security.Cryptography;
 using System.Text;
 using LearningPlatform.Application.Common.Interfaces;
+using LearningPlatform.Domain.Shared;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace LearningPlatform.Application.Features.Authentication.Logout;
 
-public class LogoutHandler : IRequestHandler<LogoutCommand, LogoutResponse>
+public class LogoutHandler : IRequestHandler<LogoutCommand, Result>
 {
     private readonly IApplicationDbContext _context;
 
@@ -15,7 +16,7 @@ public class LogoutHandler : IRequestHandler<LogoutCommand, LogoutResponse>
         _context = context;
     }
 
-    public async Task<LogoutResponse> Handle(LogoutCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(LogoutCommand request, CancellationToken cancellationToken)
     {
         if (!string.IsNullOrEmpty(request.RefreshToken))
         {
@@ -43,7 +44,7 @@ public class LogoutHandler : IRequestHandler<LogoutCommand, LogoutResponse>
             await _context.SaveChangesAsync(cancellationToken);
         }
 
-        return new LogoutResponse(true, "Logged out successfully.");
+        return Result.Success();
     }
 
     private static string HashToken(string token)

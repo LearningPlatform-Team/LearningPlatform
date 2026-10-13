@@ -1,12 +1,13 @@
 using LearningPlatform.Application.Common.Interfaces;
 using LearningPlatform.Domain.Entities.Identity;
+using LearningPlatform.Domain.Shared;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace LearningPlatform.Application.Features.Authentication.ExternalLogin;
 
-public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, ExternalLoginResponse>
+public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, ResultT<ExternalLoginResponse>>
 {
     private readonly IExternalAuthService _externalAuthService;
     private readonly UserManager<User> _userManager;
@@ -25,25 +26,22 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, ExternalLo
         _context = context;
     }
 
-    public async Task<ExternalLoginResponse> Handle(GoogleLoginCommand request, CancellationToken cancellationToken)
+    public async Task<ResultT<ExternalLoginResponse>> Handle(GoogleLoginCommand request, CancellationToken cancellationToken)
     {
-        // 1. Validate the Google ID token
         var userInfo = await _externalAuthService.ValidateGoogleTokenAsync(request.IdToken, cancellationToken);
 
         if (userInfo == null)
         {
-            return new ExternalLoginResponse(false, "Invalid Google token. Please try again.");
+            return ResultT<ExternalLoginResponse>.Failure("Invalid Google token. Please try again.", ErrorType.Unauthorized);
         }
 
-        // 2. Find or create user
         var (user, isNewUser) = await FindOrCreateUserAsync(userInfo, "Google", cancellationToken);
 
         if (user == null)
         {
-            return new ExternalLoginResponse(false, "Failed to create account. Please try again.");
+            return ResultT<ExternalLoginResponse>.Failure("Failed to create account. Please try again.", ErrorType.Failure);
         }
 
-        // 3. Generate JWT tokens
         return await GenerateLoginResponseAsync(user, isNewUser, cancellationToken);
     }
 
@@ -54,14 +52,12 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, ExternalLo
 
         if (user != null)
         {
-            // User exists — update avatar if available and link provider
             if (!string.IsNullOrEmpty(userInfo.AvatarUrl) && string.IsNullOrEmpty(user.AvatarUrl))
             {
                 user.AvatarUrl = userInfo.AvatarUrl;
                 await _userManager.UpdateAsync(user);
             }
 
-            // Check if this provider login is already linked
             var existingLogin = await _userManager.FindByLoginAsync(provider, userInfo.ProviderId);
             if (existingLogin == null)
             {
@@ -71,7 +67,6 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, ExternalLo
             return (user, false);
         }
 
-        // Create new user
         user = new User
         {
             Id = Guid.NewGuid(),
@@ -80,7 +75,7 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, ExternalLo
             UserName = userInfo.Email,
             AvatarUrl = userInfo.AvatarUrl ?? string.Empty,
             IsActive = true,
-            EmailConfirmed = true, // Email verified by Google/Facebook
+            EmailConfirmed = true,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -90,17 +85,14 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, ExternalLo
             return (null, false);
         }
 
-        // Link external login
         await _userManager.AddLoginAsync(user, new UserLoginInfo(provider, userInfo.ProviderId, provider));
 
-        // Assign Student role
         var roleExists = await _context.Roles.AnyAsync(r => r.Name == "Student", cancellationToken);
         if (roleExists)
         {
             await _userManager.AddToRoleAsync(user, "Student");
         }
 
-        // Create Student Profile
         var hasProfile = await _context.StudentProfiles.AnyAsync(sp => sp.UserId == user.Id, cancellationToken);
         if (!hasProfile)
         {
@@ -116,12 +108,12 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, ExternalLo
         return (user, true);
     }
 
-    private async Task<ExternalLoginResponse> GenerateLoginResponseAsync(
+    private async Task<ResultT<ExternalLoginResponse>> GenerateLoginResponseAsync(
         User user, bool isNewUser, CancellationToken cancellationToken)
     {
         if (!user.IsActive)
         {
-            return new ExternalLoginResponse(false, "Account is deactivated. Please contact support.");
+            return ResultT<ExternalLoginResponse>.Failure("Account is deactivated. Please contact support.", ErrorType.Unauthorized);
         }
 
         var roles = await _userManager.GetRolesAsync(user);
@@ -139,9 +131,7 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, ExternalLo
         _context.RefreshTokens.Add(refreshTokenEntity);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new ExternalLoginResponse(
-            true,
-            isNewUser ? "Account created successfully." : "Login successful.",
+        return ResultT<ExternalLoginResponse>.Success(new ExternalLoginResponse(
             accessToken,
             refreshToken,
             user.Id,
@@ -150,7 +140,7 @@ public class GoogleLoginHandler : IRequestHandler<GoogleLoginCommand, ExternalLo
             user.AvatarUrl,
             isNewUser,
             roles
-        );
+        ));
     }
 
     private static string HashToken(string token)

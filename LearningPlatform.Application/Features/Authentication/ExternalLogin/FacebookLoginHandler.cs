@@ -1,12 +1,13 @@
 using LearningPlatform.Application.Common.Interfaces;
 using LearningPlatform.Domain.Entities.Identity;
+using LearningPlatform.Domain.Shared;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace LearningPlatform.Application.Features.Authentication.ExternalLogin;
 
-public class FacebookLoginHandler : IRequestHandler<FacebookLoginCommand, ExternalLoginResponse>
+public class FacebookLoginHandler : IRequestHandler<FacebookLoginCommand, ResultT<ExternalLoginResponse>>
 {
     private readonly IExternalAuthService _externalAuthService;
     private readonly UserManager<User> _userManager;
@@ -25,25 +26,22 @@ public class FacebookLoginHandler : IRequestHandler<FacebookLoginCommand, Extern
         _context = context;
     }
 
-    public async Task<ExternalLoginResponse> Handle(FacebookLoginCommand request, CancellationToken cancellationToken)
+    public async Task<ResultT<ExternalLoginResponse>> Handle(FacebookLoginCommand request, CancellationToken cancellationToken)
     {
-        // 1. Validate the Facebook access token
         var userInfo = await _externalAuthService.ValidateFacebookTokenAsync(request.AccessToken, cancellationToken);
 
         if (userInfo == null)
         {
-            return new ExternalLoginResponse(false, "Invalid Facebook token or email permission not granted. Please try again.");
+            return ResultT<ExternalLoginResponse>.Failure("Invalid Facebook token or email permission not granted. Please try again.", ErrorType.Unauthorized);
         }
 
-        // 2. Find or create user
         var (user, isNewUser) = await FindOrCreateUserAsync(userInfo, "Facebook", cancellationToken);
 
         if (user == null)
         {
-            return new ExternalLoginResponse(false, "Failed to create account. Please try again.");
+            return ResultT<ExternalLoginResponse>.Failure("Failed to create account. Please try again.", ErrorType.Failure);
         }
 
-        // 3. Generate JWT tokens
         return await GenerateLoginResponseAsync(user, isNewUser, cancellationToken);
     }
 
@@ -89,14 +87,12 @@ public class FacebookLoginHandler : IRequestHandler<FacebookLoginCommand, Extern
 
         await _userManager.AddLoginAsync(user, new UserLoginInfo(provider, userInfo.ProviderId, provider));
 
-        // Assign Student role
         var roleExists = await _context.Roles.AnyAsync(r => r.Name == "Student", cancellationToken);
         if (roleExists)
         {
             await _userManager.AddToRoleAsync(user, "Student");
         }
 
-        // Create Student Profile
         var hasProfile = await _context.StudentProfiles.AnyAsync(sp => sp.UserId == user.Id, cancellationToken);
         if (!hasProfile)
         {
@@ -112,12 +108,12 @@ public class FacebookLoginHandler : IRequestHandler<FacebookLoginCommand, Extern
         return (user, true);
     }
 
-    private async Task<ExternalLoginResponse> GenerateLoginResponseAsync(
+    private async Task<ResultT<ExternalLoginResponse>> GenerateLoginResponseAsync(
         User user, bool isNewUser, CancellationToken cancellationToken)
     {
         if (!user.IsActive)
         {
-            return new ExternalLoginResponse(false, "Account is deactivated. Please contact support.");
+            return ResultT<ExternalLoginResponse>.Failure("Account is deactivated. Please contact support.", ErrorType.Unauthorized);
         }
 
         var roles = await _userManager.GetRolesAsync(user);
@@ -135,9 +131,7 @@ public class FacebookLoginHandler : IRequestHandler<FacebookLoginCommand, Extern
         _context.RefreshTokens.Add(refreshTokenEntity);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new ExternalLoginResponse(
-            true,
-            isNewUser ? "Account created successfully." : "Login successful.",
+        return ResultT<ExternalLoginResponse>.Success(new ExternalLoginResponse(
             accessToken,
             refreshToken,
             user.Id,
@@ -146,7 +140,7 @@ public class FacebookLoginHandler : IRequestHandler<FacebookLoginCommand, Extern
             user.AvatarUrl,
             isNewUser,
             roles
-        );
+        ));
     }
 
     private static string HashToken(string token)
