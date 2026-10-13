@@ -270,8 +270,13 @@ erDiagram
   - [ ] Assessment creation (exams, quizzes, milestones)
   - [ ] Grade entry & publication
   - [ ] Student term grade calculation
-- [ ] **Meetings & Communication**:
-  - [ ] Live Google Meet integration via `IMeetingProvider`
+- [x] **Meetings & Realtime Infrastructure**:
+  - [x] Choose option: Instant vs. Scheduled meeting creation with Google Meet integration
+  - [x] Host/Doctor meeting lifecycle (Start, End, status management)
+  - [x] Participant join code validation & automated attendance tracking (`AttendanceRecord`)
+  - [x] Meeting member screens: Real-time participant presence, roster, mic/cam/screen share sync via SignalR (`MeetingHub`)
+  - [x] In-memory thread-safe presence tracking (`IMeetingPresenceTracker` / `ConcurrentDictionary`)
+  - [x] SignalR WebSocket JWT query string authentication handshake
   - [ ] Offering notices & student notification dispatch
 - [ ] **Client Applications**:
   - [ ] Student Web Portal
@@ -329,6 +334,110 @@ erDiagram
      * **Zero Video Infrastructure Burden**: Edu Nova manages what matters (enrollment verification, automated attendance logging upon clicking "Join", and in-app SignalR member rosters), while Google handles heavy media streaming.
 * **Decision**: Adopted **Google Meet via `IMeetingProvider`** abstraction (supporting manual/mock links for local development and Google Calendar API for production).
 * **Outcome**: High-performance, zero-cost video streaming infrastructure supporting 100+ students per lecture with seamless attendance tracking.
+
+### 📄 ADR-005: Hybrid Realtime Meeting Orchestration & Presence Architecture
+* **Date**: October 2026
+* **Context**: Edu Nova requires an integrated virtual classroom experience where professors can host lectures, control meeting lifecycles, and monitor live attendance, while participants can enter with participant codes, view real-time member rosters, and toggle microphone, camera, and screen sharing states.
+* **Architectural Strategy (Hybrid Split-Plane Model)**:
+  * **Media Plane (Google Meet)**: High-bandwidth audio, HD video feeds, noise filtering, and screen video transmission are delegated to Google’s edge infrastructure via [`IMeetingProvider`](file:///D:/ACCS2/IAProject/codePlus_LearingPlatform/LearningPlatform/LearningPlatform.Application/Common/Interfaces/IMeetingProvider.cs).
+  * **Control & Presence Plane (Edu Nova SignalR Hub)**: In-app participant rosters, connection state, participant code verification, mute/camera/screen-share badges, in-meeting chat, and automated attendance tracking are orchestrated within Edu Nova's ASP.NET Core backend.
+* **Decision**: 
+  1. Implemented **Dual-Entry Lifecycle**: Hosts (Doctors) can start and enter meetings unconditionally; Students/participants require a valid participant join code (`EDU-XXXXXX`), and the meeting must be `Live`.
+  2. Built in-memory thread-safe presence tracking via [`IMeetingPresenceTracker`](file:///D:/ACCS2/IAProject/codePlus_LearingPlatform/LearningPlatform/LearningPlatform.Application/Common/Interfaces/IMeetingPresenceTracker.cs) backed by `ConcurrentDictionary` for $O(1)$ real-time lookup without database polling.
+  3. Linked participant admission directly to automated attendance: Enrolled students entering an active lecture automatically generate/update [`AttendanceRecord`](file:///D:/ACCS2/IAProject/codePlus_LearingPlatform/LearningPlatform/LearningPlatform.Domain/Entities/Attendance/AttendanceRecord.cs) (`Status = Present`, `Source = Automatic`).
+* **Outcome**: Scalable, zero-video-server-cost architecture delivering high-fidelity lecture streaming combined with complete academic attendance governance.
+
+---
+
+### 🔄 Realtime Meeting Lifecycle & Presence Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Doctor as 👨‍🏫 Doctor (Host)
+    actor Student as 👨‍🎓 Student (Participant)
+    participant API as 🌐 Meetings API
+    participant CQRS as ⚙️ MediatR Handlers
+    participant Provider as 📹 IMeetingProvider
+    participant DB as 🗄️ PostgreSQL (Supabase)
+    participant Hub as ⚡ MeetingHub (SignalR)
+    participant Tracker as 🧠 PresenceTracker
+
+    %% Phase 1: Meeting Creation
+    Note over Doctor, API: Phase 1: Create Meeting (Instant or Scheduled)
+    Doctor->>API: POST /api/meetings (SubjectOfferingId, Title, IsInstant)
+    API->>CQRS: Send CreateMeetingCommand
+    CQRS->>Provider: CreateMeetingRoomAsync(Title, JoinCode)
+    Provider-->>CQRS: MeetingRoomResult (JoinUrl, RoomId)
+    CQRS->>DB: Save Meeting (Status=Live/Scheduled, JoinCode=EDU-XXXXXX)
+    CQRS-->>API: ResultT<MeetingDto>
+    API-->>Doctor: 200 OK (Meeting Details, JoinCode, Google Meet URL)
+
+    %% Phase 2: Host Starts Meeting
+    Note over Doctor, API: Phase 2: Start Meeting (Host Lifecycle)
+    Doctor->>API: POST /api/meetings/{id}/start
+    API->>CQRS: Send StartMeetingCommand
+    CQRS->>DB: Validate Host Ownership & Update Status = Live
+    CQRS-->>API: 200 OK (Status: Live)
+
+    %% Phase 3: Host Enters Realtime Hub
+    Doctor->>Hub: Connect (/hubs/meeting?access_token=JWT)
+    Doctor->>Hub: JoinMeetingRoom(MeetingId, Role=Doctor)
+    Hub->>Tracker: TrackParticipantAsync(Doctor, mic=on, cam=on)
+    Hub-->>Doctor: MeetingRoster([Doctor])
+
+    %% Phase 4: Student Joins & Automatic Attendance
+    Note over Student, DB: Phase 3: Participant Code Validation & Attendance
+    Student->>API: POST /api/meetings/join (MeetingId, JoinCode)
+    API->>CQRS: Send JoinMeetingCommand
+    CQRS->>DB: Verify JoinCode & Meeting.Status == Live
+    CQRS->>DB: Check Student Enrollment in SubjectOffering
+    alt Student Enrolled in Course
+        CQRS->>DB: Find/Create ClassSession & Insert AttendanceRecord (Present, Automatic)
+    end
+    CQRS-->>API: ResultT<JoinMeetingResultDto> (JoinUrl, AttendanceMarked=true)
+    API-->>Student: 200 OK (JoinUrl, AttendanceMarked=true)
+
+    %% Phase 5: Student Enters Realtime Hub
+    Student->>Hub: Connect (/hubs/meeting?access_token=JWT)
+    Student->>Hub: JoinMeetingRoom(MeetingId, Role=Student)
+    Hub->>Tracker: TrackParticipantAsync(Student)
+    Hub-)Doctor: Broadcast UserJoined (Student Details)
+    Hub-->>Student: MeetingRoster([Doctor, Student])
+
+    %% Phase 6: Realtime Media State Synchronization
+    Note over Doctor, Student: Phase 4: Member Screens & Media State Sync
+    Student->>Hub: ToggleAudio(MeetingId, isMuted=true)
+    Hub->>Tracker: UpdateMediaStateAsync(Student, isMuted=true)
+    Hub-)Doctor: Broadcast UserAudioChanged (Student, isMuted=true)
+
+    Doctor->>Hub: ToggleScreenShare(MeetingId, isScreenSharing=true)
+    Hub->>Tracker: UpdateMediaStateAsync(Doctor, isScreenSharing=true)
+    Hub-)Student: Broadcast UserScreenShareChanged (Doctor, isScreenSharing=true)
+
+    %% Phase 7: Meeting Conclusion
+    Note over Doctor, API: Phase 5: Conclude Meeting
+    Doctor->>API: POST /api/meetings/{id}/end
+    API->>CQRS: Send EndMeetingCommand
+    CQRS->>DB: Update Status = Ended, EndedAt = UtcNow
+    API-->>Doctor: 200 OK (Meeting Ended)
+```
+
+---
+
+### 🛠️ Realtime Implementation Problems & Solutions Log
+
+During the implementation of the **Realtime Meetings & Infrastructure** module, we encountered several architectural, runtime, and integration hurdles. The following log documents each challenge, the root cause analysis, and the applied engineering solution:
+
+| # | Challenge / Obstacle | Root Cause | Engineering Solution |
+| :---: | :--- | :--- | :--- |
+| **1** | **Public Jitsi Meet (`meet.jit.si`) Limitations** | In August 2023, 8x8 ended anonymous room creation, enforcing third-party OAuth logins, bandwidth throttling for rooms > 30 users, and zero backend password management. | Pivoted to **Google Meet via `IMeetingProvider`**. Carrier-grade media streaming (up to 250 students) is offloaded to Google's edge, while Edu Nova governs attendance, join codes, and SignalR presence. |
+| **2** | **Third-Party Cloud Credentials Blocking Local Dev** | Google Calendar API requires Google Cloud Console project creation, OAuth consent screens, and client secrets, which would stall developers working offline. | Applied **Dependency Inversion (Strategy Pattern)**: Created `GoogleMeetMeetingProvider` (offline deterministic room generator) for development, which can be swapped with `GoogleCalendarMeetProvider` via a single line in `DependencyInjection.cs`. |
+| **3** | **`500 Internal Server Error` on Login (`column "UserType" does not exist`)** | `UserType` discriminator was added to the `User` domain entity, but no corresponding EF Core migration had been generated or applied to the shared PostgreSQL database. | Generated migration `20261013190541_AddUserTypeToUser` and applied it to Supabase via `dotnet ef database update`, synchronizing the physical schema. |
+| **4** | **Host Runtime Mismatch (`.NET 10` Host vs `.NET 9` Project)** | The development machine had .NET 10 SDK/runtime installed (`10.0.10`), while the project targets `net9.0`. By default, .NET disallows major version roll-forwards. | Added `<RollForward>LatestMajor</RollForward>` to [`LearningPlatform.Api.csproj`](file:///D:/ACCS2/IAProject/codePlus_LearingPlatform/LearningPlatform/LearningPlatform.Api/LearningPlatform.Api.csproj#L7), allowing .NET 10 to host the .NET 9 app without downloading additional runtimes. |
+| **5** | **Swagger UI "Failed to Fetch / CORS" on HTTP Localhost** | `app.UseHttpsRedirection()` forced HTTP requests (`http://localhost:5114`) to redirect to HTTPS, causing browser `fetch` calls with authorization headers to fail security policies. | Conditioned HTTPS redirection in [`Program.cs`](file:///D:/ACCS2/IAProject/codePlus_LearingPlatform/LearningPlatform/LearningPlatform.Api/Program.cs#L106-L109) to non-development environments (`if (!app.Environment.IsDevelopment())`), enabling smooth local Swagger testing on HTTP. |
+| **6** | **`404 Subject offering not found` on Meeting Creation** | Foreign key constraint required a valid `SubjectOfferingId`, but the shared database had no academic courses or terms seeded yet. | Extended [`DatabaseSeeder.cs`](file:///D:/ACCS2/IAProject/codePlus_LearingPlatform/LearningPlatform/LearningPlatform.Infrastructure/Data/DatabaseSeeder.cs) with `SeedSampleAcademicDataAsync` to seed a deterministic test course (`CS101` with ID `11111111-1111-1111-1111-111111111111`), academic term, and doctor profile on startup. |
+| **7** | **SignalR WebSocket JWT Authentication Handshake** | WebSockets cannot send standard `Authorization: Bearer <token>` HTTP headers during the initial browser connection handshake. | Configured `JwtBearerEvents.OnMessageReceived` in [`Program.cs`](file:///D:/ACCS2/IAProject/codePlus_LearingPlatform/LearningPlatform/LearningPlatform.Api/Program.cs#L51-L64) to extract `access_token` from query parameters specifically for `/hubs/*` routes. |
 
 ---
 
