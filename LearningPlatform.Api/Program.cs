@@ -16,14 +16,15 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHangfireServices(builder.Configuration);
 builder.Services.AddCustomSwagger();
 
-// CORS — allow the deployed frontend and local dev
+// CORS — allow frontend and SignalR clients with credentials
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -49,6 +50,21 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
         ClockSkew = TimeSpan.Zero
     };
+
+    // Extract access_token from query string for SignalR WebSocket connections
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddAuthorization();
@@ -69,6 +85,7 @@ try
     // Seed default roles and default Admin
     DatabaseSeeder.SeedRolesAsync(app.Services).GetAwaiter().GetResult();
     DatabaseSeeder.SeedAdminUserAsync(app.Services).GetAwaiter().GetResult();
+    DatabaseSeeder.SeedSampleAcademicDataAsync(app.Services).GetAwaiter().GetResult();
 }
 catch (Exception ex)
 {
@@ -86,7 +103,10 @@ app.UseSwaggerUI(options =>
 
 app.UseCors("AllowAll");
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -95,6 +115,7 @@ app.UseExceptionHandler();
 app.UseHangfireJobs();
 
 app.MapControllers();
+app.MapHub<LearningPlatform.Infrastructure.Hub.MeetingHub>("/hubs/meeting");
 
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
