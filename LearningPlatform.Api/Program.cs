@@ -16,14 +16,15 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHangfireServices(builder.Configuration);
 builder.Services.AddCustomSwagger();
 
-// CORS — allow the deployed frontend and local dev
+// CORS — allow frontend and SignalR clients with credentials
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -48,6 +49,21 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtAudience,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
         ClockSkew = TimeSpan.Zero
+    };
+
+    // Extract access_token from query string for SignalR WebSocket connections
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
     };
 });
 
@@ -95,6 +111,7 @@ app.UseExceptionHandler();
 app.UseHangfireJobs();
 
 app.MapControllers();
+app.MapHub<LearningPlatform.Infrastructure.Hub.MeetingHub>("/hubs/meeting");
 
 app.MapGet("/", () => Results.Redirect("/swagger"));
 

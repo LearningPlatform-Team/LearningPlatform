@@ -54,6 +54,13 @@ namespace LearningPlatform.Infrastructure
             services.AddScoped<IOtpService, OtpService>();
             services.AddScoped<IExternalAuthService, ExternalAuthService>();
 
+            // Realtime Meeting Services & Infrastructure
+            services.AddHttpContextAccessor();
+            services.AddScoped<ICurrentUserService, LearningPlatform.Infrastructure.Services.CurrentUserService>();
+            services.AddScoped<IMeetingProvider, LearningPlatform.Infrastructure.Services.GoogleMeetMeetingProvider>();
+            services.AddSingleton<IMeetingPresenceTracker, LearningPlatform.Infrastructure.Realtime.Presence.MeetingPresenceTracker>();
+            services.AddSignalR();
+
             return services;
         }
     }
