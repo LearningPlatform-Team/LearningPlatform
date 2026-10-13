@@ -1,11 +1,12 @@
 using LearningPlatform.Application.Common.Interfaces;
 using LearningPlatform.Domain.Entities.Identity;
+using LearningPlatform.Domain.Shared;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 
 namespace LearningPlatform.Application.Features.Authentication.VerifyOtp;
 
-public class VerifyOtpHandler : IRequestHandler<VerifyOtpCommand, VerifyOtpResponse>
+public class VerifyOtpHandler : IRequestHandler<VerifyOtpCommand, ResultT<VerifyOtpResponse>>
 {
     private readonly IOtpService _otpService;
     private readonly UserManager<User> _userManager;
@@ -16,7 +17,7 @@ public class VerifyOtpHandler : IRequestHandler<VerifyOtpCommand, VerifyOtpRespo
         _userManager = userManager;
     }
 
-    public async Task<VerifyOtpResponse> Handle(VerifyOtpCommand request, CancellationToken cancellationToken)
+    public async Task<ResultT<VerifyOtpResponse>> Handle(VerifyOtpCommand request, CancellationToken cancellationToken)
     {
         User? user = null;
         if (!string.IsNullOrEmpty(request.Email))
@@ -30,18 +31,18 @@ public class VerifyOtpHandler : IRequestHandler<VerifyOtpCommand, VerifyOtpRespo
 
         if (user == null)
         {
-            return new VerifyOtpResponse(false, "Invalid email or user request.");
+            return ResultT<VerifyOtpResponse>.Failure("Invalid email or user request.", ErrorType.NotFound);
         }
 
         var isValid = await _otpService.VerifyOtpAsync(user.Id, request.Otp, cancellationToken);
 
         if (!isValid)
         {
-            return new VerifyOtpResponse(false, "Invalid or expired OTP. Please try again.");
+            return ResultT<VerifyOtpResponse>.Failure("Invalid or expired OTP. Please try again.", ErrorType.Validation);
         }
 
         var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
 
-        return new VerifyOtpResponse(true, "OTP verified successfully. You can now reset your password.", resetToken);
+        return ResultT<VerifyOtpResponse>.Success(new VerifyOtpResponse(resetToken));
     }
 }

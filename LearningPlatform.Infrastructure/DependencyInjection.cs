@@ -1,10 +1,12 @@
 
 using LearningPlatform.Application.Common.Interfaces;
+using LearningPlatform.Application.Common.Interfaces.BackgroundJobs;
 using LearningPlatform.Domain.Entities.Identity;
+using LearningPlatform.Infrastructure.BackgroundJobs.Attendance;
 using LearningPlatform.Infrastructure.Data;
 using LearningPlatform.Infrastructure.Messaging.Email;
 using LearningPlatform.Infrastructure.Security;
-using LearningPlatform.Infrastructure.Service;
+using LearningPlatform.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -55,6 +57,12 @@ namespace LearningPlatform.Infrastructure
             services.AddScoped<IOtpService, OtpService>();
             services.AddScoped<IExternalAuthService, ExternalAuthService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+            services.AddHttpContextAccessor();
+            services.AddScoped<ICurrentUserService, LearningPlatform.Infrastructure.Services.CurrentUserService>();
+            services.AddScoped<IMeetingProvider, LearningPlatform.Infrastructure.Services.GoogleMeetMeetingProvider>();
+            services.AddSingleton<IMeetingPresenceTracker, LearningPlatform.Infrastructure.Realtime.Presence.MeetingPresenceTracker>();
+            services.AddSignalR();
 
             return services;
         }
