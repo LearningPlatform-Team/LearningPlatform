@@ -1,12 +1,12 @@
 using LearningPlatform.Application.Common.Interfaces;
 using LearningPlatform.Domain.Entities.Identity;
+using LearningPlatform.Domain.Shared;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace LearningPlatform.Application.Features.Authentication.VerifyRegistrationOtp;
 
-public class VerifyRegistrationOtpHandler : IRequestHandler<VerifyRegistrationOtpCommand, VerifyRegistrationOtpResponse>
+public class VerifyRegistrationOtpHandler : IRequestHandler<VerifyRegistrationOtpCommand, ResultT<VerifyRegistrationOtpResponse>>
 {
     private readonly IOtpService _otpService;
     private readonly ITokenService _tokenService;
@@ -25,7 +25,7 @@ public class VerifyRegistrationOtpHandler : IRequestHandler<VerifyRegistrationOt
         _context = context;
     }
 
-    public async Task<VerifyRegistrationOtpResponse> Handle(VerifyRegistrationOtpCommand request, CancellationToken cancellationToken)
+    public async Task<ResultT<VerifyRegistrationOtpResponse>> Handle(VerifyRegistrationOtpCommand request, CancellationToken cancellationToken)
     {
         User? user = null;
         if (!string.IsNullOrEmpty(request.Email))
@@ -39,13 +39,13 @@ public class VerifyRegistrationOtpHandler : IRequestHandler<VerifyRegistrationOt
 
         if (user == null)
         {
-            return new VerifyRegistrationOtpResponse(false, "User not found.");
+            return ResultT<VerifyRegistrationOtpResponse>.Failure("User not found.", ErrorType.NotFound);
         }
 
         var isValid = await _otpService.VerifyOtpAsync(user.Id, request.Otp, cancellationToken);
         if (!isValid)
         {
-            return new VerifyRegistrationOtpResponse(false, "Invalid or expired OTP. Please try again.");
+            return ResultT<VerifyRegistrationOtpResponse>.Failure("Invalid or expired OTP. Please try again.", ErrorType.Validation);
         }
 
         user.EmailConfirmed = true;
@@ -67,15 +67,13 @@ public class VerifyRegistrationOtpHandler : IRequestHandler<VerifyRegistrationOt
         _context.RefreshTokens.Add(refreshTokenEntity);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new VerifyRegistrationOtpResponse(
-            true,
-            "Account activated successfully. Welcome to Learnora!",
+        return ResultT<VerifyRegistrationOtpResponse>.Success(new VerifyRegistrationOtpResponse(
             accessToken,
             refreshToken,
             user.Id,
             user.FullName,
             roles
-        );
+        ));
     }
 
     private static string HashToken(string token)

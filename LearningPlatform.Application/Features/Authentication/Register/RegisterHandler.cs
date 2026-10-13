@@ -1,6 +1,7 @@
 using LearningPlatform.Application.Common.Interfaces;
 using LearningPlatform.Domain.Entities.Academic;
 using LearningPlatform.Domain.Entities.Identity;
+using LearningPlatform.Domain.Shared;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -8,20 +9,20 @@ using Microsoft.Extensions.Logging;
 
 namespace LearningPlatform.Application.Features.Authentication.Register;
 
-public class RegisterHandler : IRequestHandler<RegisterCommand, RegisterResponse>
+public class RegisterHandler : IRequestHandler<RegisterCommand, ResultT<RegisterResponse>>
 {
     private readonly UserManager<User> _userManager;
     private readonly RoleManager<Role> _roleManager;
     private readonly IApplicationDbContext _context;
     private readonly IOtpService _otpService;
-    private readonly Microsoft.Extensions.Logging.ILogger<RegisterHandler> _logger;
+    private readonly ILogger<RegisterHandler> _logger;
 
     public RegisterHandler(
         UserManager<User> userManager,
         RoleManager<Role> roleManager,
         IApplicationDbContext context,
         IOtpService otpService,
-        Microsoft.Extensions.Logging.ILogger<RegisterHandler> logger)
+        ILogger<RegisterHandler> logger)
     {
         _userManager = userManager;
         _roleManager = roleManager;
@@ -30,12 +31,12 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, RegisterResponse
         _logger = logger;
     }
 
-    public async Task<RegisterResponse> Handle(RegisterCommand request, CancellationToken cancellationToken)
+    public async Task<ResultT<RegisterResponse>> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         var existingUser = await _userManager.FindByEmailAsync(request.Email);
         if (existingUser != null)
         {
-            return new RegisterResponse(false, "A user with this email already exists.");
+            return ResultT<RegisterResponse>.Failure("A user with this email already exists.", ErrorType.Conflict);
         }
 
         if (!string.IsNullOrEmpty(request.PhoneNumber))
@@ -44,7 +45,7 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, RegisterResponse
                 .FirstOrDefaultAsync(u => u.PhoneNumber == request.PhoneNumber, cancellationToken);
             if (existingPhoneUser != null)
             {
-                return new RegisterResponse(false, "A user with this phone number already exists.");
+                return ResultT<RegisterResponse>.Failure("A user with this phone number already exists.", ErrorType.Conflict);
             }
         }
 
@@ -56,7 +57,7 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, RegisterResponse
             UserName = request.Email,
             PhoneNumber = request.PhoneNumber ?? string.Empty,
             IsActive = true,
-            EmailConfirmed = false, 
+            EmailConfirmed = false,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -65,7 +66,7 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, RegisterResponse
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            return new RegisterResponse(false, $"Registration failed: {errors}");
+            return ResultT<RegisterResponse>.Failure($"Registration failed: {errors}", ErrorType.Validation);
         }
 
         const string studentRole = "Student";
@@ -95,19 +96,8 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, RegisterResponse
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send verification OTP email to {Email}", user.Email);
-            return new RegisterResponse(
-                true,
-                "Account registered successfully, but failed to send verification email. Please use 'Resend OTP' to receive your code.",
-                user.Id,
-                user.Email
-            );
         }
 
-        return new RegisterResponse(
-            true, 
-            "Registration successful as Student. A verification OTP code has been sent to your email. Please verify your OTP to complete account activation.", 
-            user.Id,
-            user.Email
-        );
+        return ResultT<RegisterResponse>.Success(new RegisterResponse(user.Id, user.Email));
     }
 }

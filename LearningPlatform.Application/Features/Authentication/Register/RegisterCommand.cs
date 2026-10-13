@@ -1,3 +1,4 @@
+using LearningPlatform.Domain.Shared;
 using MediatR;
 
 namespace LearningPlatform.Application.Features.Authentication.Register;
@@ -8,11 +9,9 @@ public record RegisterCommand(
     string Password,
     string? ConfirmPassword = null,
     string? PhoneNumber = null
-) : IRequest<RegisterResponse>;
+) : IRequest<ResultT<RegisterResponse>>;
 
 public record RegisterResponse(
-    bool Success,
-    string Message,
-    Guid? UserId = null,
-    string? Email = null
+    Guid UserId,
+    string Email
 );

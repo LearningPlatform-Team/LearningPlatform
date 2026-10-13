@@ -1,12 +1,13 @@
 using LearningPlatform.Application.Common.Interfaces;
 using LearningPlatform.Domain.Entities.Identity;
+using LearningPlatform.Domain.Shared;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace LearningPlatform.Application.Features.Authentication.ResetPassword;
 
-public class ResetPasswordHandler : IRequestHandler<ResetPasswordCommand, ResetPasswordResponse>
+public class ResetPasswordHandler : IRequestHandler<ResetPasswordCommand, Result>
 {
     private readonly UserManager<User> _userManager;
     private readonly IApplicationDbContext _context;
@@ -22,7 +23,7 @@ public class ResetPasswordHandler : IRequestHandler<ResetPasswordCommand, ResetP
         _tokenService = tokenService;
     }
 
-    public async Task<ResetPasswordResponse> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
     {
         User? user = null;
         if (!string.IsNullOrEmpty(request.Email))
@@ -36,7 +37,7 @@ public class ResetPasswordHandler : IRequestHandler<ResetPasswordCommand, ResetP
 
         if (user == null)
         {
-            return new ResetPasswordResponse(false, "Invalid request or user not found.");
+            return Result.Failure("Invalid request or user not found.", ErrorType.NotFound);
         }
 
         var result = await _userManager.ResetPasswordAsync(user, request.ResetToken, request.NewPassword);
@@ -44,7 +45,7 @@ public class ResetPasswordHandler : IRequestHandler<ResetPasswordCommand, ResetP
         if (!result.Succeeded)
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            return new ResetPasswordResponse(false, $"Password reset failed: {errors}");
+            return Result.Failure($"Password reset failed: {errors}", ErrorType.Validation);
         }
 
         var activeRefreshTokens = await _context.RefreshTokens
@@ -58,6 +59,6 @@ public class ResetPasswordHandler : IRequestHandler<ResetPasswordCommand, ResetP
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new ResetPasswordResponse(true, "Password has been reset successfully. Please log in with your new password.");
+        return Result.Success();
     }
 }

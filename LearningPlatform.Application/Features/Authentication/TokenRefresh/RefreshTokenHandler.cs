@@ -2,13 +2,14 @@ using System.Security.Cryptography;
 using System.Text;
 using LearningPlatform.Application.Common.Interfaces;
 using LearningPlatform.Domain.Entities.Identity;
+using LearningPlatform.Domain.Shared;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace LearningPlatform.Application.Features.Authentication.TokenRefresh;
 
-public class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, RefreshTokenResponse>
+public class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, ResultT<RefreshTokenResponse>>
 {
     private readonly IApplicationDbContext _context;
     private readonly ITokenService _tokenService;
@@ -24,7 +25,7 @@ public class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, RefreshT
         _userManager = userManager;
     }
 
-    public async Task<RefreshTokenResponse> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
+    public async Task<ResultT<RefreshTokenResponse>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
     {
         var tokenHash = HashToken(request.RefreshToken);
 
@@ -34,7 +35,7 @@ public class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, RefreshT
 
         if (existingRefreshToken == null)
         {
-            return new RefreshTokenResponse(false, "Invalid or expired refresh token.");
+            return ResultT<RefreshTokenResponse>.Failure("Invalid or expired refresh token.", ErrorType.Unauthorized);
         }
 
         if (existingRefreshToken.RevokedAt != null)
@@ -49,18 +50,18 @@ public class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, RefreshT
             }
 
             await _context.SaveChangesAsync(cancellationToken);
-            return new RefreshTokenResponse(false, "Revoked refresh token detected. Please log in again.");
+            return ResultT<RefreshTokenResponse>.Failure("Revoked refresh token detected. Please log in again.", ErrorType.Unauthorized);
         }
 
         if (existingRefreshToken.ExpiresAt <= DateTime.UtcNow)
         {
-            return new RefreshTokenResponse(false, "Refresh token has expired. Please log in again.");
+            return ResultT<RefreshTokenResponse>.Failure("Refresh token has expired. Please log in again.", ErrorType.Unauthorized);
         }
 
         var user = existingRefreshToken.User;
         if (user == null || !user.IsActive)
         {
-            return new RefreshTokenResponse(false, "User account is inactive.");
+            return ResultT<RefreshTokenResponse>.Failure("User account is inactive.", ErrorType.Unauthorized);
         }
 
         existingRefreshToken.RevokedAt = DateTime.UtcNow;
@@ -82,12 +83,10 @@ public class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, RefreshT
         _context.RefreshTokens.Add(newRefreshTokenEntity);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return new RefreshTokenResponse(
-            true,
-            "Token refreshed successfully.",
+        return ResultT<RefreshTokenResponse>.Success(new RefreshTokenResponse(
             newAccessToken,
             newRefreshToken
-        );
+        ));
     }
 
     private static string HashToken(string token)

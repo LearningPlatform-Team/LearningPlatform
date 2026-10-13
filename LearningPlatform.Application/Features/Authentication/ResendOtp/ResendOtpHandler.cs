@@ -1,10 +1,11 @@
 using LearningPlatform.Application.Common.Interfaces;
+using LearningPlatform.Domain.Shared;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace LearningPlatform.Application.Features.Authentication.ResendOtp;
 
-public class ResendOtpHandler : IRequestHandler<ResendOtpCommand, ResendOtpResponse>
+public class ResendOtpHandler : IRequestHandler<ResendOtpCommand, Result>
 {
     private readonly IApplicationDbContext _context;
     private readonly IOtpService _otpService;
@@ -15,14 +16,14 @@ public class ResendOtpHandler : IRequestHandler<ResendOtpCommand, ResendOtpRespo
         _otpService = otpService;
     }
 
-    public async Task<ResendOtpResponse> Handle(ResendOtpCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(ResendOtpCommand request, CancellationToken cancellationToken)
     {
         var user = await _context.Users
             .FirstOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
 
         if (user == null || !user.IsActive)
         {
-            return new ResendOtpResponse(true, "If an account with this email exists, a new verification code has been sent.");
+            return Result.Success();
         }
 
         try
@@ -31,9 +32,9 @@ public class ResendOtpHandler : IRequestHandler<ResendOtpCommand, ResendOtpRespo
         }
         catch (InvalidOperationException ex)
         {
-            return new ResendOtpResponse(false, ex.Message);
+            return Result.Failure(ex.Message, ErrorType.Validation);
         }
 
-        return new ResendOtpResponse(true, "A new verification code has been sent to your email.");
+        return Result.Success();
     }
 }

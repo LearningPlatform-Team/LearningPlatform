@@ -1,3 +1,4 @@
+using LearningPlatform.Domain.Shared;
 using MediatR;
 
 namespace LearningPlatform.Application.Features.Authentication.Login;
@@ -5,15 +6,13 @@ namespace LearningPlatform.Application.Features.Authentication.Login;
 public record LoginCommand(
     string Email,
     string Password
-) : IRequest<LoginResponse>;
+) : IRequest<ResultT<LoginResponse>>;
 
 public record LoginResponse(
-    bool Success,
-    string Message,
-    string? AccessToken = null,
-    string? RefreshToken = null,
-    Guid? UserId = null,
-    string? FullName = null,
-    IList<string>? Roles = null,
+    string AccessToken,
+    string RefreshToken,
+    Guid UserId,
+    string FullName,
+    IList<string> Roles,
     bool IsEmailUnconfirmed = false
 );
