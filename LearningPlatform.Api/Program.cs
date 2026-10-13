@@ -85,6 +85,7 @@ try
     // Seed default roles and default Admin
     DatabaseSeeder.SeedRolesAsync(app.Services).GetAwaiter().GetResult();
     DatabaseSeeder.SeedAdminUserAsync(app.Services).GetAwaiter().GetResult();
+    DatabaseSeeder.SeedSampleAcademicDataAsync(app.Services).GetAwaiter().GetResult();
 }
 catch (Exception ex)
 {
@@ -102,7 +103,10 @@ app.UseSwaggerUI(options =>
 
 app.UseCors("AllowAll");
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();

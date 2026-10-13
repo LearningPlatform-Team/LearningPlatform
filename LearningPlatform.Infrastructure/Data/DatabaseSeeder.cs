@@ -74,4 +74,80 @@ public static class DatabaseSeeder
             }
         }
     }
+
+    public static async Task SeedSampleAcademicDataAsync(IServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<AppDbContext>>();
+
+        var sampleOfferingId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        if (!await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AnyAsync(db.SubjectOfferings, so => so.Id == sampleOfferingId))
+        {
+            var adminUser = await userManager.FindByEmailAsync("admin@learnora.com");
+            if (adminUser == null) return;
+
+            // 1. Ensure DoctorProfile for Admin
+            var doctorProfile = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(db.DoctorProfiles, dp => dp.UserId == adminUser.Id);
+            if (doctorProfile == null)
+            {
+                doctorProfile = new LearningPlatform.Domain.Entities.Academic.DoctorProfile
+                {
+                    UserId = adminUser.Id,
+                    AcademicTitle = "Professor"
+                };
+                db.DoctorProfiles.Add(doctorProfile);
+                await db.SaveChangesAsync();
+            }
+
+            // 2. Ensure Academic Term
+            var termId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+            var term = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(db.AcademicTerms, t => t.Id == termId);
+            if (term == null)
+            {
+                term = new LearningPlatform.Domain.Entities.Academic.AcademicTerm
+                {
+                    Id = termId,
+                    AcademicYear = "2026-2027",
+                    TermNumber = 1,
+                    StartDate = new DateOnly(2026, 9, 1),
+                    EndDate = new DateOnly(2027, 6, 30),
+                    IsCurrent = true
+                };
+                db.AcademicTerms.Add(term);
+                await db.SaveChangesAsync();
+            }
+
+            // 3. Ensure Subject
+            var subjectId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+            var subject = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(db.Subjects, s => s.Id == subjectId);
+            if (subject == null)
+            {
+                subject = new LearningPlatform.Domain.Entities.Academic.Subject
+                {
+                    Id = subjectId,
+                    Code = "CS101",
+                    Name = "Computer Science 101",
+                    Description = "Introduction to Computer Science and Programming",
+                    YearLevel = LearningPlatform.Domain.Enums.YearLevel.First
+                };
+                db.Subjects.Add(subject);
+                await db.SaveChangesAsync();
+            }
+
+            // 4. Create Subject Offering
+            var offering = new LearningPlatform.Domain.Entities.Academic.SubjectOffering
+            {
+                Id = sampleOfferingId,
+                SubjectId = subject.Id,
+                TermId = term.Id,
+                DoctorProfileId = doctorProfile.UserId,
+                IsActive = true
+            };
+            db.SubjectOfferings.Add(offering);
+            await db.SaveChangesAsync();
+            logger.LogInformation("Sample SubjectOffering '{OfferingId}' (CS101) seeded successfully.", sampleOfferingId);
+        }
+    }
 }
