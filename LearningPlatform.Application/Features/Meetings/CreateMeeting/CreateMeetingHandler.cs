@@ -13,7 +13,7 @@ namespace LearningPlatform.Application.Features.Meetings.CreateMeeting
     {
         private readonly IApplicationDbContext _context;
         private readonly ICurrentUserService _currentUserService;
-        private readonly IMeetingProvider _meetingProvidepr;
+        private readonly IMeetingProvider _meetingProvider;
 
         public CreateMeetingHandler(
             IApplicationDbContext context,
