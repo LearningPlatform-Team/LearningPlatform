@@ -10,7 +10,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LearningPlatform.API.Controllers;
 
+[ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class BooksController(IMediator mediator) : AppControllerBase
 {
     [HttpGet("{id:guid}")]
@@ -26,36 +28,31 @@ public class BooksController(IMediator mediator) : AppControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create(
         [FromBody] CreateBookCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await mediator.Send(
-            command,
-            cancellationToken);
-
+        var result = await mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(
         Guid id,
         [FromBody] UpdateBookCommand command,
         CancellationToken cancellationToken)
     {
         if (id != command.Id)
-        {
             return BadRequest("Route ID and request ID do not match.");
-        }
 
-        var result = await mediator.Send(
-            command,
-            cancellationToken);
-
+        var result = await mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(
         Guid id,
         CancellationToken cancellationToken)
