@@ -1,6 +1,7 @@
 ﻿
 using LearningPlatform.Application.Common.Interfaces;
 using LearningPlatform.Application.Common.Models;
+using LearningPlatform.Application.Features.SubjectOfferings.Shared;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
