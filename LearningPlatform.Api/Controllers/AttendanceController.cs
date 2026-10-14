@@ -2,6 +2,7 @@
 using LearningPlatform.Application.Features.Attendance.GetAttendanceSummary;
 using LearningPlatform.Application.Features.Attendance.GetSessionAttendance;
 using LearningPlatform.Application.Features.Attendance.GetStudentAttendance;
+using LearningPlatform.Application.Features.Attendance.MarkManualAttendance;
 using LearningPlatform.Application.Features.Attendance.UpdateAttendance;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -75,6 +76,24 @@ namespace LearningPlatform.Api.Controllers
         {
             var query = new GetAttendanceSummaryQuery(enrollmentId);
             var result = await _sender.Send(query, cancellationToken);
+            return HandleResult(result);
+        }
+        [HttpPut("sessions/{classSessionId:guid}/manual")]
+        [Authorize(Roles = "Admin,Doctor,TA")]
+        public async Task<IActionResult> MarkManualAttendance(Guid classSessionId,[FromBody] MarkManualAttendanceRequestDto request,
+            CancellationToken cancellationToken)
+        {
+            var attendanceItems = request.Students
+                .Select(item => new ManualAttendanceItem(item.EnrollmentId,item.Status))
+                .ToList();
+            var command = new MarkManualAttendanceCommand(
+                classSessionId,
+                attendanceItems,
+                User.GetUserId(),
+                User.IsAdmin(),
+                User.IsDoctor(),
+                User.IsTA());
+            var result = await _sender.Send(command,cancellationToken);
             return HandleResult(result);
         }
     }
