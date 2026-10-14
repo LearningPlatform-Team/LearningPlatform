@@ -1,12 +1,13 @@
+using System.Text;
 using LearningPlatform.Api.Extensions;
 using LearningPlatform.Api.Middlewares;
 using LearningPlatform.Application;
+using LearningPlatform.Domain.Entities.Content;
 using LearningPlatform.Infrastructure;
 using LearningPlatform.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,7 +74,25 @@ builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider
+        .GetRequiredService<AppDbContext>();
 
+    var entity = context.Model.FindEntityType(typeof(Book))!;
+
+    foreach (var foreignKey in entity.GetForeignKeys())
+    {
+        Console.WriteLine(
+            $"FK Properties: {string.Join(", ", foreignKey.Properties.Select(p => p.Name))}");
+
+        Console.WriteLine(
+            $"Navigation: {foreignKey.DependentToPrincipal?.Name}");
+
+        Console.WriteLine(
+            $"Principal: {foreignKey.PrincipalEntityType.ClrType.Name}");
+    }
+}
 // Auto-apply pending migrations safely on startup without blocking IIS
 try
 {
