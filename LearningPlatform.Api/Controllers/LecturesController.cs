@@ -2,14 +2,17 @@
 using LearningPlatform.Application.Features.Lectures.Commands.CreateLecture;
 using LearningPlatform.Application.Features.Lectures.Commands.DeleteLecture;
 using LearningPlatform.Application.Features.Lectures.Commands.UpdateLecture;
+using LearningPlatform.Application.Features.Lectures.Queries.GetAllLectures;
 using LearningPlatform.Application.Features.Lectures.Queries.GetLectureById;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LearningPlatform.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class LecturesController(IMediator mediator) : AppControllerBase
 {
     private readonly IMediator _mediator = mediator;
@@ -26,18 +29,20 @@ public class LecturesController(IMediator mediator) : AppControllerBase
         return HandleResult(result);
     }
 
-    //[HttpGet]
-    //public async Task<IActionResult> GetAll(
-    //    CancellationToken cancellationToken)
-    //{
-    //    var result = await _mediator.Send(
-    //        new GetLecturesQuery(),
-    //        cancellationToken);
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetAll(
+     CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(
+            new GetAllLecturesQuery(),
+            cancellationToken);
 
-    //    return HandleResult(result);
-    //}
+        return HandleResult(result);
+    }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create(
         [FromBody] CreateLectureCommand command,
         CancellationToken cancellationToken)
@@ -50,6 +55,7 @@ public class LecturesController(IMediator mediator) : AppControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(
         Guid id,
         [FromBody] UpdateLectureCommand command,
@@ -68,6 +74,7 @@ public class LecturesController(IMediator mediator) : AppControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(
         Guid id,
         CancellationToken cancellationToken)
