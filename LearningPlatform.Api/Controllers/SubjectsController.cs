@@ -11,85 +11,92 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LearningPlatform.Api.Controllers;
 
+[ApiController]
 [Route("api/[controller]")]
-public class SubjectsController : AppControllerBase
+[Authorize]
+public class SubjectsController(IMediator mediator) : AppControllerBase
 {
-    private readonly IMediator _mediator;
-
-    public SubjectsController(IMediator mediator)
-    {
-        _mediator = mediator;
-    }
-
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id,
-    CancellationToken cancellationToken)
+    public async Task<IActionResult> GetById(
+        Guid id,
+        CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(
+        var result = await mediator.Send(
             new GetSubjectByIdQuery(id),
             cancellationToken);
+
         return HandleResult(result);
     }
+
     [HttpGet("my")]
     [Authorize(Roles = "Student")]
     public async Task<IActionResult> GetMySubjects(
-    CancellationToken cancellationToken)
+        CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(
+        var result = await mediator.Send(
             new GetMySubjectsQuery(),
             cancellationToken);
 
         return HandleResult(result);
     }
+
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create(
         [FromBody] CreateSubjectCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(command, cancellationToken);
+        var result = await mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(
         Guid id,
         [FromBody] UpdateSubjectCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(command, cancellationToken);
+        if (id != command.Id)
+            return BadRequest("Route ID does not match command ID.");
+
+        var result = await mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(
         Guid id,
         CancellationToken cancellationToken)
     {
-        var command = new DeleteSubjectCommand(id);
-
-        var result = await _mediator.Send(command, cancellationToken);
+        var result = await mediator.Send(
+            new DeleteSubjectCommand(id),
+            cancellationToken);
 
         return HandleResult(result);
     }
+
     [HttpGet("{subjectId:guid}/lectures")]
     [Authorize(Roles = "Student")]
     public async Task<IActionResult> GetSubjectLectures(
-    Guid subjectId,
-    CancellationToken cancellationToken)
+        Guid subjectId,
+        CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(
+        var result = await mediator.Send(
             new GetSubjectLecturesQuery(subjectId),
             cancellationToken);
 
         return HandleResult(result);
     }
+
     [HttpGet("{subjectId:guid}/books")]
     [Authorize(Roles = "Student")]
     public async Task<IActionResult> GetSubjectBooks(
-    Guid subjectId,
-    CancellationToken cancellationToken)
+        Guid subjectId,
+        CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(
+        var result = await mediator.Send(
             new GetSubjectBooksQuery(subjectId),
             cancellationToken);
 
