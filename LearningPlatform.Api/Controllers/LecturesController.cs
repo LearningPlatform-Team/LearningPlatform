@@ -1,7 +1,7 @@
-﻿using LearningPlatform.Application.Features.Lectures.Commands.CreateLecture;
+﻿using LearningPlatform.Api.Controllers;
+using LearningPlatform.Application.Features.Lectures.Commands.CreateLecture;
 using LearningPlatform.Application.Features.Lectures.Commands.DeleteLecture;
 using LearningPlatform.Application.Features.Lectures.Commands.UpdateLecture;
-using LearningPlatform.Application.Features.Lectures.Queries.GetAllLectures;
 using LearningPlatform.Application.Features.Lectures.Queries.GetLectureById;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -10,7 +10,7 @@ namespace LearningPlatform.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class LecturesController(IMediator mediator) : ControllerBase
+public class LecturesController(IMediator mediator) : AppControllerBase
 {
     private readonly IMediator _mediator = mediator;
 
@@ -23,30 +23,18 @@ public class LecturesController(IMediator mediator) : ControllerBase
             new GetLectureByIdQuery(id),
             cancellationToken);
 
-        return Ok(result);
+        return HandleResult(result);
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetAll(
-        CancellationToken cancellationToken)
-    {
-        var result = await _mediator.Send(
-            new GetAllLecturesQuery(),
-            cancellationToken);
-
-        return Ok(result);
-    }
-
-    //[HttpGet("offering/{subjectOfferingId:guid}")]
-    //public async Task<IActionResult> GetByOffering(
-    //    Guid subjectOfferingId,
+    //[HttpGet]
+    //public async Task<IActionResult> GetAll(
     //    CancellationToken cancellationToken)
     //{
     //    var result = await _mediator.Send(
-    //        new GetLecturesByOfferingQuery(subjectOfferingId),
+    //        new GetLecturesQuery(),
     //        cancellationToken);
 
-    //    return Ok(result);
+    //    return HandleResult(result);
     //}
 
     [HttpPost]
@@ -54,9 +42,11 @@ public class LecturesController(IMediator mediator) : ControllerBase
         [FromBody] CreateLectureCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(command, cancellationToken);
+        var result = await _mediator.Send(
+            command,
+            cancellationToken);
 
-        return Ok(result);
+        return HandleResult(result);
     }
 
     [HttpPut("{id:guid}")]
@@ -65,9 +55,16 @@ public class LecturesController(IMediator mediator) : ControllerBase
         [FromBody] UpdateLectureCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await _mediator.Send(command, cancellationToken);
+        if (id != command.Id)
+        {
+            return BadRequest("Route ID and request ID do not match.");
+        }
 
-        return Ok(result);
+        var result = await _mediator.Send(
+            command,
+            cancellationToken);
+
+        return HandleResult(result);
     }
 
     [HttpDelete("{id:guid}")]
@@ -79,6 +76,6 @@ public class LecturesController(IMediator mediator) : ControllerBase
             new DeleteLectureCommand(id),
             cancellationToken);
 
-        return Ok(result);
+        return HandleResult(result);
     }
 }
