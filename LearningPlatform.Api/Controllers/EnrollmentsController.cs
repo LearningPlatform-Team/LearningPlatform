@@ -9,22 +9,21 @@ namespace LearningPlatform.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
+[Authorize]
 public class EnrollmentsController(IMediator mediator) : AppControllerBase
 {
-    /// <summary>
-    /// Enrolls a student in a subject offering.
-    /// </summary>
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateEnrollment(
-    [FromBody] CreateEnrollmentCommand command,
-    CancellationToken cancellationToken)
+        [FromBody] CreateEnrollmentCommand command,
+        CancellationToken cancellationToken)
     {
         var result = await mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
 
     [HttpDelete("{enrollmentId:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CancelEnrollment(
         Guid enrollmentId,
         CancellationToken cancellationToken)
@@ -33,7 +32,9 @@ public class EnrollmentsController(IMediator mediator) : AppControllerBase
         var result = await mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
+
     [HttpGet("my-history")]
+    [Authorize(Roles = "Student")]
     public async Task<IActionResult> GetMyHistory(
         CancellationToken cancellationToken)
     {
