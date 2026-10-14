@@ -1,5 +1,7 @@
 ﻿using LearningPlatform.Application.Features.SubjectOfferings.Commands.AssignTa;
+using LearningPlatform.Application.Features.SubjectOfferings.Commands.RemoveTaFromOffering;
 using LearningPlatform.Application.Features.SubjectOfferings.Commands.UpdateSubjectOffering;
+using LearningPlatform.Application.Features.SubjectOfferings.Queries.GetSubjectOfferingById;
 using LearningPlatform.Application.Features.SubjectOfferings.Queries.GetSubjectOfferings;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -22,6 +24,17 @@ public class SubjectOfferingsController(IMediator mediator) : AppControllerBase
 
         var result = await mediator.Send(command, cancellationToken);
         return HandleResult(result);
+    }
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(
+    Guid id,
+    CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(
+            new GetSubjectOfferingByIdQuery(id),
+            cancellationToken);
+
+        return Ok(result);
     }
     [HttpGet]
     public async Task<IActionResult> GetAll(
@@ -46,6 +59,21 @@ public class SubjectOfferingsController(IMediator mediator) : AppControllerBase
         };
         var result = await mediator.Send(command, cancellationToken);
         return HandleResult(result);
+    }
+
+    [HttpDelete("{subjectOfferingId:guid}/tas/{taProfileId:guid}")]
+    public async Task<IActionResult> RemoveTa(
+    Guid subjectOfferingId,
+    Guid taProfileId,
+    CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(
+            new RemoveTaFromOfferingCommand(
+                subjectOfferingId,
+                taProfileId),
+            cancellationToken);
+
+        return Ok(result);
     }
 }
 
