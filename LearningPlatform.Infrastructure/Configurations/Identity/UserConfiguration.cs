@@ -19,6 +19,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.PreferredLanguage)
             .IsRequired();
 
+        builder.Property(u => u.UserType)
+            .IsRequired();
+
         builder.Property(u => u.IsActive)
             .IsRequired();
 

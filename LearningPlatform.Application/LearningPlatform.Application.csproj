@@ -14,6 +14,14 @@
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
     <PackageReference Include="MediatR" Version="12.4.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Features\Attendance\GetSessionAttendance\" />
+    <Folder Include="Features\Attendance\GetStudentAttendance\" />
+    <Folder Include="Features\Attendance\GetAttendanceSummary\" />
+    <Folder Include="Features\Attendance\UpdateAttendance\" />
   </ItemGroup>
 
 </Project>

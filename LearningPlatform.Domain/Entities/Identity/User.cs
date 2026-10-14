@@ -1,4 +1,4 @@
-﻿using LearningPlatform.Domain.Entities.Academic;
+using LearningPlatform.Domain.Entities.Academic;
 using LearningPlatform.Domain.Entities.Content;
 using LearningPlatform.Domain.Entities.Engagement;
 using LearningPlatform.Domain.Enums;
@@ -11,6 +11,7 @@ public class User : IdentityUser<Guid>
     public string FullName { get; set; } = string.Empty;
     public string AvatarUrl { get; set; } = string.Empty;
     public AppLanguage PreferredLanguage { get; set; } = AppLanguage.English;
+    public UserType UserType { get; set; } = UserType.Student;
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

@@ -15,9 +15,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LearningPlatform.Api.Controllers;
 
-[ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController : AppControllerBase
 {
     private readonly IMediator _mediator;
 
@@ -27,165 +26,117 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Register a new student account (sends 6-digit verification OTP to email)
+    /// Register a new student account (sends 4-digit verification OTP to email)
     /// </summary>
     [HttpPost("register")]
-    public async Task<ActionResult<RegisterResponse>> Register([FromBody] RegisterCommand command)
+    public async Task<IActionResult> Register([FromBody] RegisterCommand command)
     {
         var result = await _mediator.Send(command);
-        
-        if (!result.Success)
-        {
-            return BadRequest(result);
-        }
-
-        return Ok(result);
+        return HandleResult(result);
     }
 
     /// <summary>
     /// Verify student registration OTP, activates account and returns JWT tokens
     /// </summary>
     [HttpPost("register/verify-otp")]
-    public async Task<ActionResult<VerifyRegistrationOtpResponse>> VerifyRegistrationOtp([FromBody] VerifyRegistrationOtpCommand command)
+    public async Task<IActionResult> VerifyRegistrationOtp([FromBody] VerifyRegistrationOtpCommand command)
     {
         var result = await _mediator.Send(command);
-
-        if (!result.Success)
-        {
-            return BadRequest(result);
-        }
-
-        return Ok(result);
+        return HandleResult(result);
     }
 
     /// <summary>
     /// Login with email and password (returns access token and refresh token)
     /// </summary>
     [HttpPost("login")]
-    public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginCommand command)
+    public async Task<IActionResult> Login([FromBody] LoginCommand command)
     {
         var result = await _mediator.Send(command);
-        
-        if (!result.Success)
-        {
-            return BadRequest(result);
-        }
-
-        return Ok(result);
+        return HandleResult(result);
     }
 
     /// <summary>
     /// Refresh access token using a valid refresh token
     /// </summary>
     [HttpPost("refresh-token")]
-    public async Task<ActionResult<RefreshTokenResponse>> RefreshToken([FromBody] RefreshTokenCommand command)
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenCommand command)
     {
         var result = await _mediator.Send(command);
-
-        if (!result.Success)
-        {
-            return BadRequest(result);
-        }
-
-        return Ok(result);
+        return HandleResult(result);
     }
 
     /// <summary>
     /// Login or register with Google (send the ID token from Google Sign-In SDK)
     /// </summary>
     [HttpPost("google")]
-    public async Task<ActionResult<ExternalLoginResponse>> GoogleLogin([FromBody] GoogleLoginCommand command)
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginCommand command)
     {
         var result = await _mediator.Send(command);
-
-        if (!result.Success)
-        {
-            return BadRequest(result);
-        }
-
-        return Ok(result);
+        return HandleResult(result);
     }
 
     /// <summary>
     /// Login or register with Facebook (send the access token from Facebook Login SDK)
     /// </summary>
     [HttpPost("facebook")]
-    public async Task<ActionResult<ExternalLoginResponse>> FacebookLogin([FromBody] FacebookLoginCommand command)
+    public async Task<IActionResult> FacebookLogin([FromBody] FacebookLoginCommand command)
     {
         var result = await _mediator.Send(command);
-
-        if (!result.Success)
-        {
-            return BadRequest(result);
-        }
-
-        return Ok(result);
+        return HandleResult(result);
     }
 
     /// <summary>
     /// Initiate password reset — sends OTP to user's email
     /// </summary>
     [HttpPost("password/forgot")]
-    public async Task<ActionResult<ForgotPasswordResponse>> ForgotPassword([FromBody] ForgotPasswordCommand command)
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command)
     {
         var result = await _mediator.Send(command);
-        return Ok(result);
+        return HandleResult(result);
     }
 
     /// <summary>
     /// Resend OTP verification code to user's email
     /// </summary>
     [HttpPost("password/resend-otp")]
-    public async Task<ActionResult<ResendOtpResponse>> ResendOtp([FromBody] ResendOtpCommand command)
+    public async Task<IActionResult> ResendOtp([FromBody] ResendOtpCommand command)
     {
         var result = await _mediator.Send(command);
-        return Ok(result);
+        return HandleResult(result);
     }
 
     /// <summary>
     /// Verify OTP for password reset
     /// </summary>
     [HttpPost("password/verify-otp")]
-    public async Task<ActionResult<VerifyOtpResponse>> VerifyOtp([FromBody] VerifyOtpCommand command)
+    public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpCommand command)
     {
         var result = await _mediator.Send(command);
-        
-        if (!result.Success)
-        {
-            return BadRequest(result);
-        }
-
-        return Ok(result);
+        return HandleResult(result);
     }
 
     /// <summary>
     /// Reset password with new password
     /// </summary>
     [HttpPost("password/reset")]
-    public async Task<ActionResult<ResetPasswordResponse>> ResetPassword([FromBody] ResetPasswordCommand command)
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordCommand command)
     {
         var result = await _mediator.Send(command);
-        
-        if (!result.Success)
-        {
-            return BadRequest(result);
-        }
-
-        return Ok(result);
+        return HandleResult(result);
     }
 
     /// <summary>
     /// Logout current session and revoke refresh token
     /// </summary>
     [HttpPost("logout")]
-    public async Task<ActionResult<LogoutResponse>> Logout([FromBody] LogoutCommand command)
+    public async Task<IActionResult> Logout([FromBody] LogoutCommand command)
     {
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
         Guid? userId = Guid.TryParse(userIdString, out var uid) ? uid : null;
 
         var request = command with { UserId = command.UserId ?? userId };
         var result = await _mediator.Send(request);
-        return Ok(result);
+        return HandleResult(result);
     }
 
     /// <summary>
