@@ -1,12 +1,10 @@
+using System.Text;
 using LearningPlatform.Api.Extensions;
 using LearningPlatform.Api.Middlewares;
 using LearningPlatform.Application;
 using LearningPlatform.Infrastructure;
-using LearningPlatform.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,26 +71,6 @@ builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 var app = builder.Build();
-
-// Auto-apply pending migrations safely on startup without blocking IIS
-try
-{
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.SetCommandTimeout(15);
-    db.Database.Migrate();
-
-    // Seed default roles and default Admin
-    DatabaseSeeder.SeedRolesAsync(app.Services).GetAwaiter().GetResult();
-    DatabaseSeeder.SeedAdminUserAsync(app.Services).GetAwaiter().GetResult();
-    DatabaseSeeder.SeedSampleAcademicDataAsync(app.Services).GetAwaiter().GetResult();
-}
-catch (Exception ex)
-{
-    var logger = app.Services.GetRequiredService<ILogger<Program>>();
-    logger.LogError(ex, "Database migration or role seeding encountered an error on startup.");
-}
-
 // Enable Swagger in all environments so it works on the deployed MonsterASP.NET host
 app.UseSwagger();
 app.UseSwaggerUI(options =>
