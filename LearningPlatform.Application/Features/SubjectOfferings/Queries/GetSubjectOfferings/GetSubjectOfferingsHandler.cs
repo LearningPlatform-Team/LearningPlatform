@@ -2,6 +2,7 @@
 using LearningPlatform.Application.Common.Interfaces;
 using LearningPlatform.Application.Common.Models;
 using LearningPlatform.Application.Features.SubjectOfferings.Shared;
+using LearningPlatform.Domain.Shared;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,9 +12,9 @@ public class GetSubjectOfferingsHandler(
     IApplicationDbContext context)
     : IRequestHandler<
         GetSubjectOfferingsQuery,
-        PagedResult<SubjectOfferingResponse>>
+        ResultT<PagedResult<SubjectOfferingResponse>>>
 {
-    public async Task<PagedResult<SubjectOfferingResponse>> Handle(
+    public async Task<ResultT<PagedResult<SubjectOfferingResponse>>> Handle(
         GetSubjectOfferingsQuery request,
         CancellationToken cancellationToken)
     {
@@ -64,10 +65,11 @@ public class GetSubjectOfferingsHandler(
             ))
             .ToListAsync(cancellationToken);
 
-        return new PagedResult<SubjectOfferingResponse>(
-            items,
-            totalCount,
-            pageNumber,
-            pageSize);
+        return ResultT<PagedResult<SubjectOfferingResponse>>.Success(
+            new PagedResult<SubjectOfferingResponse>(
+                items,
+                totalCount,
+                pageNumber,
+                pageSize));
     }
 }
