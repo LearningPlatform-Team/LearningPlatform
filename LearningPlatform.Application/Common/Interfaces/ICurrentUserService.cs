@@ -1,17 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System;
 
-namespace LearningPlatform.Application.Common.Interfaces
+namespace LearningPlatform.Application.Common.Interfaces;
+
+public interface ICurrentUserService
 {
-    public interface ICurrentUserService
-    {
-        Guid? UserId { get; }
-        string? Email { get; }
-        string? FullName { get; }
-        bool IsAuthenticated { get; }
-        bool IsInRole(string role);
-    }
+    Guid? UserId { get; }
+    string? Email { get; }
+    string? FullName { get; }
+    bool IsAuthenticated { get; }
+    bool IsInRole(string role);
 }
