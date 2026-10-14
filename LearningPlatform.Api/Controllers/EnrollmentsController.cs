@@ -1,5 +1,6 @@
 ﻿using LearningPlatform.Application.Features.Enrollments.Commands.CancelEnrollment;
 using LearningPlatform.Application.Features.Enrollments.Commands.CreateEnrollment;
+using LearningPlatform.Application.Features.Enrollments.Queries.GetEnrollmentById;
 using LearningPlatform.Application.Features.Enrollments.Queries.GetEnrollments;
 using LearningPlatform.Application.Features.Enrollments.Queries.GetMyEnrollmentHistory;
 using MediatR;
@@ -29,6 +30,18 @@ public class EnrollmentsController(IMediator mediator) : AppControllerBase
     CancellationToken cancellationToken)
     {
         var result = await mediator.Send(query, cancellationToken);
+        return HandleResult(result);
+    }
+    [HttpGet("{enrollmentId:guid}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetById(
+    Guid enrollmentId,
+    CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(
+            new GetEnrollmentByIdQuery(enrollmentId),
+            cancellationToken);
+
         return HandleResult(result);
     }
     [HttpDelete("{enrollmentId:guid}")]
