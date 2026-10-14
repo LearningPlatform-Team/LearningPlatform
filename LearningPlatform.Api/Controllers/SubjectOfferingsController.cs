@@ -1,5 +1,6 @@
 ﻿using LearningPlatform.Application.Features.SubjectOfferings.Commands.AssignTa;
 using LearningPlatform.Application.Features.SubjectOfferings.Commands.UpdateSubjectOffering;
+using LearningPlatform.Application.Features.SubjectOfferings.Queries.GetSubjectOfferings;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,7 +23,15 @@ public class SubjectOfferingsController(IMediator mediator) : AppControllerBase
         var result = await mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
+    [HttpGet]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] GetSubjectOfferingsQuery query,
+        CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(query, cancellationToken);
 
+        return Ok(result);
+    }
     [Authorize(Roles = "Admin")]
     [HttpPost("{offeringId:guid}/tas")]
     public async Task<IActionResult> AssignTa(
