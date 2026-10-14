@@ -25,12 +25,6 @@ public class BookConfiguration : IEntityTypeConfiguration<Book>
 
         builder.HasIndex(b => b.UploadedByUserId);
 
-        // Relationships
-        builder.HasOne(b => b.Subject)
-            .WithMany(s => s.Books)
-            .HasForeignKey(b => b.SubjectId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         builder.HasOne(b => b.UploadedByUser)
             .WithMany()
             .HasForeignKey(b => b.UploadedByUserId)
