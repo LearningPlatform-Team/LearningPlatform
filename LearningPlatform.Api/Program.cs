@@ -81,6 +81,11 @@ app.UseSwaggerUI(options =>
 
 app.UseCors("AllowAll");
 
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+});
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
@@ -90,7 +95,16 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseExceptionHandler();
-app.UseHangfireJobs();
+
+try
+{
+    app.UseHangfireJobs();
+}
+catch (Exception ex)
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    logger.LogError(ex, "Failed to initialize Hangfire background recurring jobs on startup.");
+}
 
 app.MapControllers();
 app.MapHub<LearningPlatform.Infrastructure.Hub.MeetingHub>("/hubs/meeting");
