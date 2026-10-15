@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
 
@@ -12,9 +13,9 @@ namespace LearningPlatform.Api.Extensions
             {
                 options.SwaggerDoc("v1", new OpenApiInfo
                 {
-                    Title = "Learning Platform API",
+                    Title = "Learning Platform (Learnora) API",
                     Version = "v1",
-                    Description = "API documentation for the Learning Platform"
+                    Description = "Comprehensive API documentation for Learnora Mobile App & Web Frontend. Use the Authorize button to authenticate with your Bearer token."
                 });
 
                 // Add JWT Bearer Authorization button in Swagger UI
@@ -42,6 +43,21 @@ namespace LearningPlatform.Api.Extensions
                         Array.Empty<string>()
                     }
                 });
+
+                // Include XML Comments from API assembly
+                var apiXmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var apiXmlPath = Path.Combine(AppContext.BaseDirectory, apiXmlFile);
+                if (File.Exists(apiXmlPath))
+                {
+                    options.IncludeXmlComments(apiXmlPath, includeControllerXmlComments: true);
+                }
+
+                // Include XML Comments from Application assembly
+                var appXmlPath = Path.Combine(AppContext.BaseDirectory, "LearningPlatform.Application.xml");
+                if (File.Exists(appXmlPath))
+                {
+                    options.IncludeXmlComments(appXmlPath);
+                }
             });
             return services;
         }
