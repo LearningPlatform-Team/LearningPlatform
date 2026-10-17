@@ -7,8 +7,8 @@ using LearningPlatform.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Metrics;
 using Serilog;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog using appsettings.json
@@ -87,10 +87,16 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddAuthorization();
-
+builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 builder.Services.AddProblemDetails();
-
+// OpenTelemetry Metrics
+builder.Services
+    .AddOpenTelemetry()
+    .WithMetrics(metrics => metrics
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddPrometheusExporter());
 var app = builder.Build();
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
@@ -112,7 +118,7 @@ app.UseSwaggerUI(options =>
 
 app.UseSerilogRequestLogging();
 app.UseCors("AllowAll");
-
+app.MapPrometheusScrapingEndpoint();
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders =
